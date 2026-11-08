@@ -10,21 +10,37 @@ permissions:
   contents: write
 
 jobs:
+  # ============================================================================
+  # JOB 1: BUILD WINDOWS DESKTOP .EXE v2.0.0 (100% AMHARIC + PIN LOCK)
+  # ============================================================================
   build-windows-exe:
     name: "Job 1 — Build Windows .EXE v2.0.0 (RoyalBingoPro-251)"
     runs-on: windows-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Auto-Extract Any Uploaded ZIP
+      - name: Auto-Extract Uploaded ZIP & Flatten Any Subfolder
         shell: bash
         run: |
           set -e
           FOUND_ZIP=$(find . -maxdepth 2 -iname "*.zip" | head -n 1)
           if [ -n "$FOUND_ZIP" ]; then
-            unzip -o "$FOUND_ZIP" -x ".github/*"
+            echo "Extracting uploaded archive: $FOUND_ZIP"
+            unzip -q -o "$FOUND_ZIP" -x ".github/*"
           fi
+          # If files were extracted inside a subfolder (e.g. RoyalBingoPro_251_GitHub_Repo_v2.0.0/), move them to root!
+          if [ ! -f "package.json" ]; then
+            PKG_FILE=$(find . -maxdepth 3 -name "package.json" | head -n 1)
+            if [ -n "$PKG_FILE" ]; then
+              SUBDIR=$(dirname "$PKG_FILE")
+              echo "Flattening nested folder: $SUBDIR -> ."
+              cp -rf "$SUBDIR"/* .
+              rm -rf "$SUBDIR"
+            fi
+          fi
+          ls -la
           sed -i 's/styles\.css/styles.css?v=2.0.0/g' desktop/renderer/index.html || true
           sed -i 's/app\.js/app.js?v=2.0.0/g' desktop/renderer/index.html || true
           sed -i 's/royal-bingo-core\.js/royal-bingo-core.js?v=2.0.0/g' desktop/renderer/index.html || true
@@ -66,21 +82,37 @@ jobs:
             dist/RoyalBingoPro_251_Setup_v2.0.0.exe
             dist/RoyalBingoPro_Setup.exe
 
+  # ============================================================================
+  # JOB 2: BUILD ANDROID .APK v2.0.0 & DEPLOY WEB SIMULATOR TO GITHUB PAGES
+  # ============================================================================
   build-android-apk:
     name: "Job 2 — Build Android .APK v2.0.0 & Deploy Web Simulator"
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Auto-Extract Uploaded ZIP & Push Unpacked Tree to Root for GitHub Pages
+      - name: Auto-Extract Uploaded ZIP, Flatten Subfolder & Push to Root for GitHub Pages
         run: |
           set -e
           FOUND_ZIP=$(find . -maxdepth 2 -iname "*.zip" | head -n 1)
           if [ -n "$FOUND_ZIP" ]; then
-            unzip -o "$FOUND_ZIP" -x ".github/*"
+            echo "Extracting uploaded archive: $FOUND_ZIP"
+            unzip -q -o "$FOUND_ZIP" -x ".github/*"
             git rm -f "$FOUND_ZIP" 2>/dev/null || rm -f "$FOUND_ZIP"
           fi
+          # If files were extracted inside a subfolder (e.g. RoyalBingoPro_251_GitHub_Repo_v2.0.0/), move them to root!
+          if [ ! -f "package.json" ]; then
+            PKG_FILE=$(find . -maxdepth 3 -name "package.json" | head -n 1)
+            if [ -n "$PKG_FILE" ]; then
+              SUBDIR=$(dirname "$PKG_FILE")
+              echo "Flattening nested folder: $SUBDIR -> ."
+              cp -rf "$SUBDIR"/* .
+              rm -rf "$SUBDIR"
+            fi
+          fi
+          ls -la
           mkdir -p mobile/www
           cp shared/royal-bingo-core.js mobile/www/royal-bingo-core.js
           cp assets/logo.svg mobile/www/logo.svg
@@ -96,7 +128,7 @@ jobs:
           git config user.email "bot@royalcraft.et"
           git add -A
           if ! git diff --cached --quiet; then
-            git commit -m "Deploy unpacked v2.0.0 files to root for GitHub Pages"
+            git commit -m "Deploy flattened v2.0.0 files to root for GitHub Pages"
             git push origin HEAD:main || true
           fi
 
@@ -176,10 +208,14 @@ jobs:
             dist-android/RoyalBingoPro_500Cartela_v2.0.0.apk
             dist-android/RoyalBingoPro_251_500Cartela_v2.0.0.aab
 
+  # ============================================================================
+  # JOB 3: PUBLISH OFFICIAL v2.0.0 RELEASE ON GITHUB RELEASES
+  # ============================================================================
   publish-release:
     name: "Job 3 — Publish Official RoyalBingoPro-251 v2.0.0 Release"
     needs: [build-windows-exe, build-android-apk]
     runs-on: ubuntu-latest
+
     steps:
       - name: Download Windows .EXE v2.0.0 Artifact
         uses: actions/download-artifact@v4
