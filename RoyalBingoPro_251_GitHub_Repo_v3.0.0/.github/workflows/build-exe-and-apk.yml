@@ -1,0 +1,250 @@
+name: Build RoyalBingoPro-251 v3.0 (.EXE + .APK + .AAB) & Publish Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # ============================================================================
+  # JOB 1: BUILD WINDOWS DESKTOP .EXE v3.0.0 (52 ROYAL FEATURES + STUDIO VOICES)
+  # ============================================================================
+  build-windows-exe:
+    name: "Job 1 — Build Windows .EXE v3.0.0 (RoyalBingoPro-251)"
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Auto-Extract Any Uploaded ZIP & Flatten Any Subfolder Non-Destructively
+        shell: bash
+        run: |
+          set -e
+          FOUND_ZIP=$(find . -maxdepth 2 -iname "*.zip" | head -n 1)
+          if [ -n "$FOUND_ZIP" ]; then
+            echo "Extracting uploaded archive: $FOUND_ZIP"
+            unzip -q -o "$FOUND_ZIP" -x ".github/*"
+          fi
+          if [ ! -f "package.json" ]; then
+            PKG_FILE=$(find . -maxdepth 3 -name "package.json" | head -n 1)
+            if [ -n "$PKG_FILE" ]; then
+              SUBDIR=$(dirname "$PKG_FILE")
+              echo "Flattening nested folder: $SUBDIR -> ."
+              cp -rf "$SUBDIR"/* .
+              rm -rf "$SUBDIR"
+            fi
+          fi
+          ls -la
+          sed -i 's/styles\.css?v=[0-9.]*/styles.css?v=3.0.0/g' desktop/renderer/index.html || true
+          sed -i 's/app\.js?v=[0-9.]*/app.js?v=3.0.0/g' desktop/renderer/index.html || true
+          sed -i 's/royal-bingo-core\.js?v=[0-9.]*/royal-bingo-core.js?v=3.0.0/g' desktop/renderer/index.html || true
+
+      - name: Setup Python 3.11 & Generate Multi-Res Icons
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build Multi-Res Icons
+        shell: bash
+        run: |
+          pip install Pillow
+          python scripts/generate_icons.py || true
+
+      - name: Setup Node.js 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build Windows .EXE v3.0.0 (NSIS)
+        shell: bash
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: |
+          npm install --no-audit --no-fund
+          npx electron-builder --win nsis --x64 --publish never
+          EXE_FOUND=$(find dist -maxdepth 1 -name "*.exe" | head -n 1)
+          if [ -n "$EXE_FOUND" ]; then
+            cp "$EXE_FOUND" dist/RoyalBingoPro_251_Setup_v3.0.0.exe || true
+            cp "$EXE_FOUND" dist/RoyalBingoPro_251_Setup_v2.0.0.exe || true
+            cp "$EXE_FOUND" dist/RoyalBingoPro_Setup.exe || true
+          fi
+
+      - name: Upload Windows .EXE v3.0.0 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RoyalBingoPro-251-Windows-EXE
+          path: |
+            dist/RoyalBingoPro_251_Setup_v3.0.0.exe
+            dist/RoyalBingoPro_251_Setup_v2.0.0.exe
+            dist/RoyalBingoPro_Setup.exe
+
+  # ============================================================================
+  # JOB 2: BUILD ANDROID .APK v3.0.0 & DEPLOY WEB SIMULATOR TO GITHUB PAGES
+  # ============================================================================
+  build-android-apk:
+    name: "Job 2 — Build Android .APK v3.0.0 & Deploy Web Simulator"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Auto-Extract Uploaded ZIP, Flatten Subfolder & Push to Root for GitHub Pages
+        run: |
+          set -e
+          FOUND_ZIP=$(find . -maxdepth 2 -iname "*.zip" | head -n 1)
+          if [ -n "$FOUND_ZIP" ]; then
+            echo "Extracting uploaded archive: $FOUND_ZIP"
+            unzip -q -o "$FOUND_ZIP" -x ".github/*"
+            git rm -f "$FOUND_ZIP" 2>/dev/null || rm -f "$FOUND_ZIP"
+          fi
+          if [ ! -f "package.json" ]; then
+            PKG_FILE=$(find . -maxdepth 3 -name "package.json" | head -n 1)
+            if [ -n "$PKG_FILE" ]; then
+              SUBDIR=$(dirname "$PKG_FILE")
+              echo "Flattening nested folder: $SUBDIR -> ."
+              cp -rf "$SUBDIR"/* .
+              rm -rf "$SUBDIR"
+            fi
+          fi
+          mkdir -p mobile/www/voices
+          cp shared/royal-bingo-core.js mobile/www/royal-bingo-core.js
+          cp assets/logo.svg mobile/www/logo.svg
+          cp -rf desktop/renderer/voices/status_*.mp3 mobile/www/voices/ 2>/dev/null || true
+          cp -rf desktop/renderer/voices/bingo_chime.mp3 mobile/www/voices/ 2>/dev/null || true
+
+          git config user.name "RoyalBingoPro-251 v3 Builder"
+          git config user.email "bot@royalcraft.et"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Deploy unpacked RoyalBingoPro-251 v3.0.0 files to root for GitHub Pages"
+            git push origin HEAD:main || true
+          fi
+
+      - name: Setup Python 3.11 & Generate Icons
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build Icons
+        run: |
+          pip install Pillow
+          python scripts/generate_icons.py || true
+
+      - name: Setup Node.js 22 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup Java JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Build Signed Android .APK v3.0.0 + .AAB
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -e
+          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          export ANDROID_SDK_ROOT="$ANDROID_HOME"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+
+          npm install --no-audit --no-fund
+          rm -rf android
+          npx cap add android
+          npx cap sync android
+
+          rm -f android/app/royal-bingo-release.keystore
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | tr -d ' \t\n\r' | base64 -d > android/app/royal-bingo-release.keystore || true
+          fi
+          if [ ! -s "android/app/royal-bingo-release.keystore" ]; then
+            rm -f android/app/royal-bingo-release.keystore
+            keytool -genkeypair -v \
+              -keystore android/app/royal-bingo-release.keystore \
+              -alias royalbingo \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 18250 \
+              -storepass "RoyalBingo2026!" \
+              -keypass "RoyalBingo2026!" \
+              -dname "CN=RoyalCraft Software PLC, OU=Bingo Division, O=RoyalCraft, L=Addis Ababa, ST=Addis Ababa, C=ET"
+          fi
+
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease bundleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file=$PWD/app/royal-bingo-release.keystore \
+            -Pandroid.injected.signing.store.password="RoyalBingo2026!" \
+            -Pandroid.injected.signing.key.alias="royalbingo" \
+            -Pandroid.injected.signing.key.password="RoyalBingo2026!"
+
+          mkdir -p ../dist-android
+          APK_FILE=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          AAB_FILE=$(find app/build/outputs/bundle/release -name "*.aab" | head -n 1)
+          cp "$APK_FILE" ../dist-android/RoyalBingoPro_251_500Cartela_v3.0.0.apk
+          cp "$APK_FILE" ../dist-android/RoyalBingoPro_251_500Cartela_v2.0.0.apk
+          cp "$APK_FILE" ../dist-android/RoyalBingoPro_500Cartela_v2.0.0.apk
+          cp "$AAB_FILE" ../dist-android/RoyalBingoPro_251_500Cartela_v3.0.0.aab
+
+      - name: Upload Android .APK v3.0.0 Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: RoyalBingoPro-251-Android-APK
+          path: |
+            dist-android/RoyalBingoPro_251_500Cartela_v3.0.0.apk
+            dist-android/RoyalBingoPro_251_500Cartela_v2.0.0.apk
+            dist-android/RoyalBingoPro_500Cartela_v2.0.0.apk
+            dist-android/RoyalBingoPro_251_500Cartela_v3.0.0.aab
+
+  # ============================================================================
+  # JOB 3: PUBLISH OFFICIAL v3.0.0 RELEASE ON GITHUB RELEASES
+  # ============================================================================
+  publish-release:
+    name: "Job 3 — Publish Official RoyalBingoPro-251 v3.0.0 Release"
+    needs: [build-windows-exe, build-android-apk]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Windows .EXE v3.0.0 Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: RoyalBingoPro-251-Windows-EXE
+          path: release-assets
+
+      - name: Download Android .APK v3.0.0 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: RoyalBingoPro-251-Android-APK
+          path: release-assets
+
+      - name: Create Official v3.0.0 GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v3.0.0
+          name: "👑 ሮያል ቢንጎ ፕሮ 251 (RoyalBingoPro-251) — Official Royal Enterprise Release v3.0.0"
+          body: |
+            ## 👑 ሮያል ቢንጎ ፕሮ 251 (RoyalBingoPro-251) — Royal Enterprise Edition v3.0.0
+            - **💻 የኮምፒውተር ሶፍትዌር (`.EXE` v3.0.0)**: `RoyalBingoPro_251_Setup_v3.0.0.exe` / `RoyalBingoPro_Setup.exe`
+            - **📱 የስልክ 500-ካርቴላ፣ Wallet Bridge እና Admin CRM መተግበሪያ (`.APK` v3.0.0)**: `RoyalBingoPro_251_500Cartela_v3.0.0.apk`
+            - **📦 Google Play Bundle (`.AAB` v3.0.0)**: `RoyalBingoPro_251_500Cartela_v3.0.0.aab`
+            - **📞 Wallet Top-Up Contact**: `+251 925432016` / `@OneGBEthiopia` (`CBE: 1000212746367 | Telebirr: 0925432016`)
+          files: |
+            release-assets/RoyalBingoPro_251_Setup_v3.0.0.exe
+            release-assets/RoyalBingoPro_251_Setup_v2.0.0.exe
+            release-assets/RoyalBingoPro_Setup.exe
+            release-assets/RoyalBingoPro_251_500Cartela_v3.0.0.apk
+            release-assets/RoyalBingoPro_251_500Cartela_v2.0.0.apk
+            release-assets/RoyalBingoPro_500Cartela_v2.0.0.apk
+            release-assets/RoyalBingoPro_251_500Cartela_v3.0.0.aab
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
