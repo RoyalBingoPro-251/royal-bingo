@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <title>👑 ሮያል ቢንጎ ፕሮ 251 (RoyalBingoPro-251 v3.0) — የተጫዋች 500-ካርቴላ እና አድሚን</title>
+  <link rel="stylesheet" href="styles.css?v=3.1.0" />
+</head>
+<body>
+  <!-- FULLSCREEN CELEBRATION CONFETTI CANVAS (#26) -->
+  <canvas id="mobileConfettiCanvas" class="m-confetti-canvas"></canvas>
+
+  <!-- MOBILE TOP BAR (Logo 27 taps unlocks Admin mode with masked password 'Mom@251et') -->
+  <header class="m-header">
+    <div class="m-brand" id="secretAdminLogoTrigger">
+      <img src="logo.svg" alt="ሮያል ቢንጎ 251 ሎጎ" class="m-logo" />
+      <div>
+        <h1 class="m-title">ሮያል ቢንጎ ፕሮ <span class="m-badge">251</span></h1>
+        <p class="m-sub" id="tapCounterHint">ሮያል ቢንጎ ካርቴላ (<span id="connectedHallBadge">አዳራሽ ያልተመረጠ</span>)</p>
+      </div>
+    </div>
+    <div class="m-actions">
+      <button class="m-btn m-btn-outline" id="openHallLinkModalBtn" title="የአጫዋች User ID ማገናኛ (#51)">🔗 አዳራሽ</button>
+      <button class="m-btn m-btn-gold" id="openAdminContactBridgeBtn" title="ዋሌት ማስሞያና Admin Contact (#50)">📲 ዋሌት ሙላ</button>
+      <button class="m-btn m-btn-outline" id="topAuditToggleBtn" title="የዙሮች ሪፖርት">📊 ዙሮች ▼</button>
+      <button class="m-btn m-btn-outline" id="resetBoardBtn">🔄 አጽዳ</button>
+    </div>
+  </header>
+
+  <!-- PLAYER CONFIG PANEL (1 TO 4 MULTI-CARD PLAY #32) -->
+  <section class="m-config-panel">
+    <div class="m-row">
+      <div class="m-field">
+        <label>የካርቴላ ብዛት (1–4 ካርቴላ)</label>
+        <select id="cartelaModeSelect" class="m-input">
+          <option value="1">1 ካርቴላ (ነጠላ ትልቅ እይታ)</option>
+          <option value="2">2 ካርቴላ በአንድ ጊዜ (Split-Screen)</option>
+          <option value="3">3 ካርቴላ በአንድ ጊዜ (Multi-Card)</option>
+          <option value="4">4 ካርቴላ በአንድ ጊዜ (Quad-Grid)</option>
+        </select>
+      </div>
+      <div class="m-field">
+        <label>ካርቴላ #1</label>
+        <input type="number" id="mobileCartela1Input" min="1" max="500" value="1" class="m-input m-num-input" />
+      </div>
+      <div class="m-field" id="mobileCartela2Field" style="display:none;">
+        <label>ካርቴላ #2</label>
+        <input type="number" id="mobileCartela2Input" min="1" max="500" value="2" class="m-input m-num-input" />
+      </div>
+      <div class="m-field" id="mobileCartela3Field" style="display:none;">
+        <label>ካርቴላ #3</label>
+        <input type="number" id="mobileCartela3Input" min="1" max="500" value="3" class="m-input m-num-input" />
+      </div>
+      <div class="m-field" id="mobileCartela4Field" style="display:none;">
+        <label>ካርቴላ #4</label>
+        <input type="number" id="mobileCartela4Input" min="1" max="500" value="4" class="m-input m-num-input" />
+      </div>
+    </div>
+
+    <div class="m-row">
+      <div class="m-field">
+        <label>የዝግ አይነት (52+ ቅርጾች)</label>
+        <select id="mobilePatternSelect" class="m-input"></select>
+      </div>
+      <div class="m-field">
+        <label>የ1 ካርቴላ ዋጋ (ብር)</label>
+        <div class="m-stake-input-wrap">
+          <select id="mobileStakeSelect" class="m-input m-stake-select">
+            <option value="10">10 ብር</option>
+            <option value="20">20 ብር</option>
+            <option value="30" selected>30 ብር</option>
+            <option value="50">50 ብር</option>
+            <option value="100">100 ብር</option>
+            <option value="200">200 ብር</option>
+            <option value="500">500 ብር</option>
+            <option value="custom">ሌላ (Custom ብር)</option>
+          </select>
+          <input type="number" id="mobileCustomStakeInput" placeholder="ብር" class="m-input m-custom-stake" style="display:none;" />
+        </div>
+      </div>
+      <div class="m-field">
+        <label>የዙሩ ተጫዋቾች ብዛት</label>
+        <input type="number" id="mobilePlayerCountInput" min="2" value="20" class="m-input m-num-input" placeholder="ተጫዋች" />
+      </div>
+    </div>
+
+    <!-- Live Calculated Pool Strip for Player -->
+    <div class="m-player-calc-strip">
+      <span>ጠቅላላ፦ <strong id="mPlayerGrossDisplay">600 ብር</strong></span>
+      <span>ተቆራጭ (25%)፦ <strong id="mPlayerCutDisplay">150 ብር</strong></span>
+      <span class="m-gold-text">🏆 ደራሽ (75%)፦ <strong id="mPlayerNetDisplay">450 ብር</strong></span>
+    </div>
+  </section>
+
+  <!-- LIVE WIN / STATUS BANNER -->
+  <div id="mobileWinAlertBanner" class="m-win-banner" style="display:none;"></div>
+
+  <!-- CARTELAS CONTAINER (1 TO 4 RESPONSIVE VIEWPORT FIT #31, #32) -->
+  <main id="mobileCartelasContainer" class="m-cartelas-wrapper mode-1">
+    <!-- Cartela #1 Card -->
+    <div class="m-cartela-card" id="mobileCard1">
+      <div class="m-card-head">
+        <span>ካርቴላ <strong id="card1TitleNum">#1</strong></span>
+        <span class="m-sig" id="card1Sig" title="Anti-Tamper Checksum">SIG</span>
+        <button class="m-verify-btn" data-card="1">🏆 ዝግህን አረጋግጥ</button>
+      </div>
+      <div class="m-bingo-letters"><span>B</span><span>I</span><span>N</span><span>G</span><span>O</span></div>
+      <div id="mobileGrid1" class="m-bingo-grid"></div>
+    </div>
+
+    <!-- Cartela #2 Card -->
+    <div class="m-cartela-card" id="mobileCard2" style="display:none;">
+      <div class="m-card-head">
+        <span>ካርቴላ <strong id="card2TitleNum">#2</strong></span>
+        <span class="m-sig" id="card2Sig">SIG</span>
+        <button class="m-verify-btn" data-card="2">🏆 ዝግህን አረጋግጥ</button>
+      </div>
+      <div class="m-bingo-letters"><span>B</span><span>I</span><span>N</span><span>G</span><span>O</span></div>
+      <div id="mobileGrid2" class="m-bingo-grid"></div>
+    </div>
+
+    <!-- Cartela #3 Card -->
+    <div class="m-cartela-card" id="mobileCard3" style="display:none;">
+      <div class="m-card-head">
+        <span>ካርቴላ <strong id="card3TitleNum">#3</strong></span>
+        <span class="m-sig" id="card3Sig">SIG</span>
+        <button class="m-verify-btn" data-card="3">🏆 ዝግህን አረጋግጥ</button>
+      </div>
+      <div class="m-bingo-letters"><span>B</span><span>I</span><span>N</span><span>G</span><span>O</span></div>
+      <div id="mobileGrid3" class="m-bingo-grid"></div>
+    </div>
+
+    <!-- Cartela #4 Card -->
+    <div class="m-cartela-card" id="mobileCard4" style="display:none;">
+      <div class="m-card-head">
+        <span>ካርቴላ <strong id="card4TitleNum">#4</strong></span>
+        <span class="m-sig" id="card4Sig">SIG</span>
+        <button class="m-verify-btn" data-card="4">🏆 ዝግህን አረጋግጥ</button>
+      </div>
+      <div class="m-bingo-letters"><span>B</span><span>I</span><span>N</span><span>G</span><span>O</span></div>
+      <div id="mobileGrid4" class="m-bingo-grid"></div>
+    </div>
+  </main>
+
+  <!-- COLLAPSIBLE PLAYER ROUNDS AUDIT LOG (WITHCONNECTED OPERATOR USER ID #51) -->
+  <section class="m-audit-container">
+    <div class="m-audit-header" id="toggleMobileAuditBtn">
+      <span>📊 የጨዋታ ዙሮች ማስታወሻና የአዳራሽ ታሪክ</span>
+      <span id="mAuditArrow">▼</span>
+    </div>
+    <div id="mobileAuditContent" class="m-audit-content" style="display:none;">
+      <div class="m-audit-actions">
+        <button class="m-btn m-btn-outline m-btn-sm" id="mClearAuditBtn">🗑️ ሪፖርት አጽዳ</button>
+      </div>
+      <table class="m-table">
+        <thead>
+          <tr>
+            <th>ዙር</th>
+            <th>የአዳራሽ User ID</th>
+            <th>ተጫዋች</th>
+            <th>የ1 ካርቴላ</th>
+            <th>ደራሽ (75%)</th>
+            <th>ውጤት</th>
+          </tr>
+        </thead>
+        <tbody id="mAuditTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 1: OPERATOR USER ID PAIRING AT STARTUP (#51)                    -->
+  <!-- ===================================================================== -->
+  <div class="m-modal-backdrop" id="hallPairingModal">
+    <div class="m-modal-box">
+      <h3>🔗 ከቢንጎ አጫዋቹ ኮምፒውተር User ID ጋር ያገናኙ (#51)</h3>
+      <p class="m-muted">በየትኛው የቢንጎ አዳራሽ እየተጫወቱ እንደሆነ ለመለየት የአጫዋቹን የኮምፒውተር <code>User ID</code> ያስገቡ ወይም ከቀድሞ አዳራሾች ይምረጡ፦</p>
+      <label style="font-size:0.8rem; color:#fde047;">የአጫዋቹ ኮምፒውተር User ID (ለምሳሌ፦ <code>RB-SEK-2843</code>)፦</label>
+      <input type="text" id="playerHallUserIdInput" value="RB-SEK-2843" placeholder="RB-SEK-2843" class="m-input" style="margin:6px 0;" />
+      <label style="font-size:0.8rem; color:#cbd5e1;">የአዳራሹ ስም (ለማስታወሻ)፦</label>
+      <input type="text" id="playerHallNameInput" value="ሮያል ቢንጎ አዳራሽ 1" placeholder="ለምሳሌ፦ ሰቆጣ ቢንጎ" class="m-input" style="margin:6px 0;" />
+
+      <div id="savedHallsQuickList" class="saved-halls-list"></div>
+
+      <div class="m-modal-btns">
+        <button class="m-btn m-btn-gold" id="confirmHallPairingBtn">✅ አገናኝና ጨዋታ ጀምር</button>
+        <button class="m-btn m-btn-outline" id="skipHallPairingBtn">ዝለል</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 2: PUBLIC ADMIN CONTACT & PHONE-TO-PC WALLET BRIDGE (#50)       -->
+  <!-- ===================================================================== -->
+  <div class="m-modal-backdrop" id="adminContactBridgeModal">
+    <div class="m-modal-box m-admin-box">
+      <div class="m-admin-header">
+        <h3>📲 የዋሌት ማስሞያና ከባለቤቱ (Admin) ጋር መገናኛ (#50)</h3>
+        <button class="m-close-btn" id="closeAdminContactBridgeBtn">✕</button>
+      </div>
+
+      <div class="m-contact-card">
+        <div style="font-weight:900; color:#facc15; margin-bottom:4px;">👑 ሮያል ቢንጎ ፕሮ 251 ዋና አስተዳደር</div>
+        <div>📞 ስልክ፦ <a href="tel:+251925432016" style="color:#38bdf8; font-weight:800;">+251 925432016</a></div>
+        <div>✈️ ቴሌግራም፦ <a href="https://t.me/OneGBEthiopia" target="_blank" style="color:#38bdf8; font-weight:800;">@OneGBEthiopia</a></div>
+        <div>🏦 የባንክ አካውንቶች፦ <strong>CBE: 1000212746367 | Telebirr: 0925432016</strong></div>
+        <div style="margin-top:6px; font-size:0.78rem; color:#86efac;">💎 1,000,000 ዋሌት ቶከን = ከ 300,000 እስከ 600,000 ብር የተጣራ ትርፍ ያሰራል!</div>
+      </div>
+
+      <div class="m-admin-form" style="margin-top:10px;">
+        <h4 style="color:#fde047; font-size:0.9rem;">📤 1. ለኮምፒውተርዎ ዋሌት ለማስሞላት ጥያቄ ይላኩ</h4>
+        <label>የኮምፒውተርዎ User ID፦</label>
+        <input type="text" id="bridgeReqUserId" value="RB-SEK-2843" class="m-input" />
+        <label>የአሁኑ የሙሌት ተራ (Sequence #)፦</label>
+        <input type="number" id="bridgeReqSeq" value="1" min="1" class="m-input" />
+        <label>የሚፈልጉት የቶከን መጠንና የከፈሉበት የባንክ ቁጥር (FT/Ref)፦</label>
+        <input type="text" id="bridgeReqPaymentRef" placeholder="ለምሳሌ፦ 1,000,000 ቶከን — FT26310XXXXX" class="m-input" />
+        <div style="display:flex; gap:8px; margin-top:6px;">
+          <button class="m-btn m-btn-gold" id="sendBridgeRequestTelegramBtn" style="flex:1;">✈️ በTelegram ጥያቄ ላክ</button>
+          <button class="m-btn m-btn-outline" id="copyBridgeRequestTextBtn" style="flex:1;">📋 ጽሑፍ ኮፒ አድርግ</button>
+        </div>
+      </div>
+
+      <div class="m-admin-form" style="margin-top:12px; border-top:1px solid rgba(250,204,21,0.3); padding-top:10px;">
+        <h4 style="color:#86efac; font-size:0.9rem;">🔄 2. በስልክዎ የተሞላውን የዋሌት ኮድ አረጋግጠው ወደ ኮምፒውተርዎ ያስተላልፉ</h4>
+        <p class="m-muted">ከAdmin በTelegram/SMS የተላከልዎትን ኮድ እዚህ ስልክዎ ላይ አስገብተው ትክክለኛነቱን ያረጋግጡ ወይም በኢንተርኔት ከGitHub ፈልገው ወደ ኮምፒውተሩ ያስገቡ፦</p>
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="bridgeVerifyKeyInput" placeholder="RBPV-2843-1M00-XXXX ወይም JSON" class="m-input" style="flex:1;" />
+          <button class="m-btn m-btn-emerald" id="verifyBridgeKeyOnPhoneBtn">✔️ ፈትሽ</button>
+        </div>
+        <button class="m-btn m-btn-outline m-full-btn" id="fetchOnlineWalletFromPhoneBtn" style="margin-top:6px;">🌐 በUser ID ከOnline GitHub ፈልገህ ኮዱን አውጣ</button>
+        <div id="bridgeVerifiedResultBox" class="m-key-box" style="display:none; margin-top:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 3: SECRET ADMIN PASSWORD MODAL (27 LOGO TAPS — 'Mom@251et') (#1)-->
+  <!-- ===================================================================== -->
+  <div class="m-modal-backdrop" id="adminPinModal">
+    <div class="m-modal-box">
+      <h3>🔐 የባለቤት ሚስጥራዊ Admin Password ያስገቡ</h3>
+      <p class="m-muted">27 ጊዜ ነክተዋል! ወደ Admin Wallet Generator እና የደንበኞች መዝገብ (CRM) ለመግባት የባለቤት ይለፍ ቃልዎን ያስገቡ፦</p>
+      <!-- Mandatory Rule #1: Masked password input with NO visible password hint! -->
+      <input type="password" id="adminPinInput" autocomplete="off" placeholder="•••••••••" class="m-input m-pin-input" style="-webkit-text-security:disc;" />
+      <div class="m-modal-btns">
+        <button class="m-btn m-btn-gold" id="unlockAdminBtn">ክፈት (Unlock Admin)</button>
+        <button class="m-btn m-btn-outline" id="cancelAdminPinBtn">ዝጋ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 4: SECRET OWNER ADMIN GENERATOR & CRM PANEL                     -->
+  <!-- ===================================================================== -->
+  <div class="m-modal-backdrop" id="adminGeneratorModal">
+    <div class="m-modal-box m-admin-box">
+      <div class="m-admin-header">
+        <h3>👑 ሮያል ቢንጎ 251 — Owner Admin Wallet & CRM</h3>
+        <button class="m-close-btn" id="closeAdminGenBtn">✕</button>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="m-admin-tabs">
+        <button class="m-tab-btn active" id="tabKeygenBtn">⚡ ዋሌት መሙያ</button>
+        <button class="m-tab-btn" id="tabCrmBtn">👥 የደንበኞች መዝገብ (CRM)</button>
+        <button class="m-tab-btn" id="tabPinResetBtn">🔑 PIN Reset</button>
+      </div>
+
+      <!-- Tab 1: Keygen -->
+      <div id="adminTabKeygen" class="admin-tab-pane active">
+        <div class="m-admin-form">
+          <label>1. የገዢው User ID (ለምሳሌ፦ <code>RB-SEK-2843</code>)</label>
+          <input type="text" id="adminBuyerUserId" value="RB-SEK-2843" class="m-input" />
+
+          <label>2. የገዢው የሙሌት ተራ (Sequence #)</label>
+          <input type="number" id="adminBuyerSeq" value="1" min="1" class="m-input" />
+
+          <label>3. የሚሞላለት የዋሌት ቶከን መጠን (1M ቶከን = 300k–600k ብር የሚያሰራ)</label>
+          <select id="adminTokenPreset" class="m-input">
+            <option value="1000000" selected>1,000,000 Tokens (300,000 – 600,000 ብር የሚያሰራ)</option>
+            <option value="500000">500,000 Tokens</option>
+            <option value="250000">250,000 Tokens</option>
+            <option value="100000">100,000 Tokens</option>
+            <option value="50000">50,000 Tokens</option>
+            <option value="2000000">2,000,000 Tokens</option>
+            <option value="5000000">5,000,000 Tokens</option>
+            <option value="10000000">10,000,000 Tokens</option>
+          </select>
+
+          <label>ወይም ሌላ የቶከን መጠን (Custom)፦</label>
+          <input type="number" id="adminCustomTokens" value="1000000" step="1000" class="m-input" />
+
+          <button class="m-btn m-btn-gold m-full-btn" id="generateSignedKeyBtn">⚡ ባለ 16-ፊደል ኮድ እና JSON አመንጭ</button>
+        </div>
+
+        <div id="adminGeneratedOutput" class="m-admin-output" style="display:none;">
+          <div class="m-key-box">
+            <span>ለገዢው በSMS / Telegram የሚላክ ባለ 16-ፊደል ኮድ፦</span>
+            <strong id="generated16KeyDisplay">RBPV-2843-1M00-XXXX</strong>
+            <button class="m-btn m-btn-emerald m-copy-btn" id="copySmsKeyBtn">📋 የSMS ኮድ ኮፒ አድርግ</button>
+          </div>
+
+          <div class="m-json-box">
+            <span>ለOnline 1-Click Sync (`wallets.json` ውስጥ የሚጨመር)፦</span>
+            <pre id="generatedJsonSnippet"></pre>
+            <button class="m-btn m-btn-outline m-copy-btn" id="copyJsonSnippetBtn">📋 JSON ኮፒ አድርግ</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Encrypted Customer CRM -->
+      <div id="adminTabCrm" class="admin-tab-pane" style="display:none;">
+        <div class="m-admin-form">
+          <label>የደንበኛ ሙሉ ስም</label>
+          <input type="text" id="crmClientName" placeholder="ለምሳሌ፦ አበበ ከበደ" class="m-input" />
+          <label>የአዳራሽ ስምና ከተማ</label>
+          <input type="text" id="crmClientHall" placeholder="ለምሳሌ፦ Sekota Bingo Center (ሰቆጣ)" class="m-input" />
+          <label>ስልክ ቁጥር</label>
+          <input type="text" id="crmClientPhone" placeholder="0911XXXXXX" class="m-input" />
+          <label>User ID</label>
+          <input type="text" id="crmClientUid" placeholder="RB-SEK-2843" class="m-input" />
+          <button class="m-btn m-btn-emerald" id="saveCrmClientBtn">💾 ደንበኛ መዝግብ</button>
+        </div>
+        <div class="crm-client-list" id="crmClientListContainer"></div>
+      </div>
+
+      <!-- Tab 3: Remote PIN Reset Generator -->
+      <div id="adminTabPinReset" class="admin-tab-pane" style="display:none;">
+        <div class="m-admin-form">
+          <label>የገዢው User ID (PIN የረሳው ደንበኛ)</label>
+          <input type="text" id="pinResetUidInput" placeholder="RB-SEK-2843" class="m-input" />
+          <button class="m-btn m-btn-gold" id="generatePinResetTokenBtn">🔑 ባለ 8-ፊደል PIN Reset ኮድ አመንጭ</button>
+        </div>
+        <div id="pinResetTokenOutput" class="m-key-box" style="display:none; margin-top:10px;">
+          <span>ለገዢው የሚላክ የReset ኮድ፦</span>
+          <strong id="pinResetTokenDisplay">RST-XXXXXX</strong>
+          <button class="m-btn m-btn-emerald m-copy-btn" id="copyPinResetBtn">📋 ኮድ ኮፒ አድርግ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Mobile Toast Notification -->
+  <div id="mobileCustomToast" class="m-custom-toast"></div>
+
+  <script src="royal-bingo-core.js?v=3.1.0"></script>
+  <script src="app.js?v=3.1.0"></script>
+</body>
+</html>
