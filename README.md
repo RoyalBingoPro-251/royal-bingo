@@ -16,8 +16,8 @@
 
 ## 🌐 በስልክዎ ወይም በታብሌትዎ ብራውዘር በቀጥታ ለመሞከር (Live Web Simulator)
 
-* 🖥️ [**1. የኮምፒውተሩን (.EXE) ቢንጎ በስልክ/ታብሌት ብራውዘር ከፍተው ለመሞከር እዚህ ይጫኑ**](https://royalbingopro-251.github.io/royal-bingo/desktop/renderer/index.html?v=2.0.0)
-* 📲 [**2. የስልኩን 500-ካርቴላ መጫወቻ በብራውዘር ከፍተው ለመሞከር እዚህ ይጫኑ**](https://royalbingopro-251.github.io/royal-bingo/mobile/www/index.html?v=2.0.0)
+* 🖥️ [**1. የኮምፒውተሩን (.EXE) ቢንጎ በስልክ/ታብሌት ብራውዘር ከፍተው ለመሞከር እዚህ ይጫኑ**](https://royalbingopro-251.github.io/royal-bingo/desktop/renderer/index.html?v=3.0.5)
+* 📲 [**2. የስልኩን 500-ካርቴላ መጫወቻ በብራውዘር ከፍተው ለመሞከር እዚህ ይጫኑ**](https://royalbingopro-251.github.io/royal-bingo/mobile/www/index.html?v=3.0.5)
 
 ---
 
