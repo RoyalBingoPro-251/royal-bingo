@@ -10,39 +10,31 @@ permissions:
   contents: write
 
 jobs:
-  # ============================================================================
-  # JOB 1: BUILD WINDOWS DESKTOP .EXE v3.0.0 (52 ROYAL FEATURES + STUDIO VOICES)
-  # ============================================================================
   build-windows-exe:
-    name: "Job 1 Рђћ Build Windows .EXE v3.0.0 (RoyalBingoPro-251)"
+    name: "Job 1 — Build Windows .EXE v3.0.0 (RoyalBingoPro-251)"
     runs-on: windows-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Auto-Extract Any Uploaded ZIP & Flatten Any Subfolder Non-Destructively
+      - name: Force Extract ZIP & Overwrite Root Files Unconditionally
         shell: bash
         run: |
           set -e
           FOUND_ZIP=$(find . -maxdepth 2 -iname "*.zip" | head -n 1)
           if [ -n "$FOUND_ZIP" ]; then
-            echo "Extracting uploaded archive: $FOUND_ZIP"
-            unzip -q -o "$FOUND_ZIP" -x ".github/*"
-          fi
-          if [ ! -f "package.json" ]; then
-            PKG_FILE=$(find . -maxdepth 3 -name "package.json" | head -n 1)
+            rm -rf _unzipped_v3 && mkdir -p _unzipped_v3
+            unzip -q -o "$FOUND_ZIP" -d _unzipped_v3
+            PKG_FILE=$(find _unzipped_v3 -maxdepth 3 -name "package.json" | head -n 1)
             if [ -n "$PKG_FILE" ]; then
               SUBDIR=$(dirname "$PKG_FILE")
-              echo "Flattening nested folder: $SUBDIR -> ."
               cp -rf "$SUBDIR"/* .
-              rm -rf "$SUBDIR"
             fi
+            rm -rf _unzipped_v3
           fi
-          ls -la
-          sed -i 's/styles\.css?v=[0-9.]*/styles.css?v=3.0.0/g' desktop/renderer/index.html || true
-          sed -i 's/app\.js?v=[0-9.]*/app.js?v=3.0.0/g' desktop/renderer/index.html || true
-          sed -i 's/royal-bingo-core\.js?v=[0-9.]*/royal-bingo-core.js?v=3.0.0/g' desktop/renderer/index.html || true
+          sed -i 's/v=2\.0\.0/v=3.0.5/g' README.md index.html desktop/renderer/index.html mobile/www/index.html || true
+          sed -i 's/v=3\.0\.0/v=3.0.5/g' README.md index.html desktop/renderer/index.html mobile/www/index.html || true
 
       - name: Setup Python 3.11 & Generate Multi-Res Icons
         uses: actions/setup-python@v5
@@ -70,7 +62,6 @@ jobs:
           EXE_FOUND=$(find dist -maxdepth 1 -name "*.exe" | head -n 1)
           if [ -n "$EXE_FOUND" ]; then
             cp "$EXE_FOUND" dist/RoyalBingoPro_251_Setup_v3.0.0.exe || true
-            cp "$EXE_FOUND" dist/RoyalBingoPro_251_Setup_v2.0.0.exe || true
             cp "$EXE_FOUND" dist/RoyalBingoPro_Setup.exe || true
           fi
 
@@ -80,37 +71,30 @@ jobs:
           name: RoyalBingoPro-251-Windows-EXE
           path: |
             dist/RoyalBingoPro_251_Setup_v3.0.0.exe
-            dist/RoyalBingoPro_251_Setup_v2.0.0.exe
             dist/RoyalBingoPro_Setup.exe
 
-  # ============================================================================
-  # JOB 2: BUILD ANDROID .APK v3.0.0 & DEPLOY WEB SIMULATOR TO GITHUB PAGES
-  # ============================================================================
   build-android-apk:
-    name: "Job 2 Рђћ Build Android .APK v3.0.0 & Deploy Web Simulator"
+    name: "Job 2 — Build Android .APK v3.0.0 & Force-Update GitHub Pages"
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Auto-Extract Uploaded ZIP, Flatten Subfolder & Push to Root for GitHub Pages
+      - name: Force Extract ZIP, Overwrite Root & Push Cache-Busted v3.0.5 to GitHub Pages
         run: |
           set -e
           FOUND_ZIP=$(find . -maxdepth 2 -iname "*.zip" | head -n 1)
           if [ -n "$FOUND_ZIP" ]; then
-            echo "Extracting uploaded archive: $FOUND_ZIP"
-            unzip -q -o "$FOUND_ZIP" -x ".github/*"
-            git rm -f "$FOUND_ZIP" 2>/dev/null || rm -f "$FOUND_ZIP"
-          fi
-          if [ ! -f "package.json" ]; then
-            PKG_FILE=$(find . -maxdepth 3 -name "package.json" | head -n 1)
+            rm -rf _unzipped_v3 && mkdir -p _unzipped_v3
+            unzip -q -o "$FOUND_ZIP" -d _unzipped_v3
+            PKG_FILE=$(find _unzipped_v3 -maxdepth 3 -name "package.json" | head -n 1)
             if [ -n "$PKG_FILE" ]; then
               SUBDIR=$(dirname "$PKG_FILE")
-              echo "Flattening nested folder: $SUBDIR -> ."
               cp -rf "$SUBDIR"/* .
-              rm -rf "$SUBDIR"
             fi
+            rm -rf _unzipped_v3
+            git rm -f "$FOUND_ZIP" 2>/dev/null || rm -f "$FOUND_ZIP"
           fi
           mkdir -p mobile/www/voices
           cp shared/royal-bingo-core.js mobile/www/royal-bingo-core.js
@@ -118,11 +102,15 @@ jobs:
           cp -rf desktop/renderer/voices/status_*.mp3 mobile/www/voices/ 2>/dev/null || true
           cp -rf desktop/renderer/voices/bingo_chime.mp3 mobile/www/voices/ 2>/dev/null || true
 
+          # Force update all README and HTML links to ?v=3.0.5 so browser cache is 100% bypassed!
+          sed -i 's/v=2\.0\.0/v=3.0.5/g' README.md index.html portal/index.html desktop/renderer/index.html mobile/www/index.html || true
+          sed -i 's/v=3\.0\.0/v=3.0.5/g' README.md index.html portal/index.html desktop/renderer/index.html mobile/www/index.html || true
+
           git config user.name "RoyalBingoPro-251 v3 Builder"
           git config user.email "bot@royalcraft.et"
           git add -A
           if ! git diff --cached --quiet; then
-            git commit -m "Deploy unpacked RoyalBingoPro-251 v3.0.0 files to root for GitHub Pages"
+            git commit -m "Force overwrite root with v3.0.5 and bust GitHub Pages cache"
             git push origin HEAD:main || true
           fi
 
@@ -191,7 +179,6 @@ jobs:
           AAB_FILE=$(find app/build/outputs/bundle/release -name "*.aab" | head -n 1)
           cp "$APK_FILE" ../dist-android/RoyalBingoPro_251_500Cartela_v3.0.0.apk
           cp "$APK_FILE" ../dist-android/RoyalBingoPro_251_500Cartela_v2.0.0.apk
-          cp "$APK_FILE" ../dist-android/RoyalBingoPro_500Cartela_v2.0.0.apk
           cp "$AAB_FILE" ../dist-android/RoyalBingoPro_251_500Cartela_v3.0.0.aab
 
       - name: Upload Android .APK v3.0.0 Artifacts
@@ -201,14 +188,10 @@ jobs:
           path: |
             dist-android/RoyalBingoPro_251_500Cartela_v3.0.0.apk
             dist-android/RoyalBingoPro_251_500Cartela_v2.0.0.apk
-            dist-android/RoyalBingoPro_500Cartela_v2.0.0.apk
             dist-android/RoyalBingoPro_251_500Cartela_v3.0.0.aab
 
-  # ============================================================================
-  # JOB 3: PUBLISH OFFICIAL v3.0.0 RELEASE ON GITHUB RELEASES
-  # ============================================================================
   publish-release:
-    name: "Job 3 Рђћ Publish Official RoyalBingoPro-251 v3.0.0 Release"
+    name: "Job 3 — Publish Official RoyalBingoPro-251 v3.0.0 Release"
     needs: [build-windows-exe, build-android-apk]
     runs-on: ubuntu-latest
 
@@ -229,20 +212,16 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v3.0.0
-          name: "­ЪЉЉ рѕ«рІФрѕЇ рЅбріЋрїј рЇЋрѕ« 251 (RoyalBingoPro-251) Рђћ Official Royal Enterprise Release v3.0.0"
+          name: "👑 ሮያል ቢንጎ ፕሮ 251 (RoyalBingoPro-251) — Official Royal Enterprise Release v3.0.0"
           body: |
-            ## ­ЪЉЉ рѕ«рІФрѕЇ рЅбріЋрїј рЇЋрѕ« 251 (RoyalBingoPro-251) Рђћ Royal Enterprise Edition v3.0.0
-            - **­Ъњ╗ рІері«рѕЮрЇњрІЇрЅ░рѕГ рѕХрЇЇрЅхрІїрѕГ (`.EXE` v3.0.0)**: `RoyalBingoPro_251_Setup_v3.0.0.exe` / `RoyalBingoPro_Setup.exe`
-            - **­ЪЊ▒ рІерѕхрѕЇріГ 500-ріФрѕГрЅ┤рѕІрЇБ Wallet Bridge ріЦріЊ Admin CRM рѕўрЅ░рїЇрЅарѕфрІФ (`.APK` v3.0.0)**: `RoyalBingoPro_251_500Cartela_v3.0.0.apk`
-            - **­ЪЊд Google Play Bundle (`.AAB` v3.0.0)**: `RoyalBingoPro_251_500Cartela_v3.0.0.aab`
-            - **­ЪЊъ Wallet Top-Up Contact**: `+251 925432016` / `@OneGBEthiopia` (`CBE: 1000212746367 | Telebirr: 0925432016`)
+            ## 👑 ሮያል ቢንጎ ፕሮ 251 (RoyalBingoPro-251) — Royal Enterprise Edition v3.0.0
+            - **💻 የኮምፒውተር ሶፍትዌር (`.EXE` v3.0.0)**: `RoyalBingoPro_251_Setup_v3.0.0.exe`
+            - **📱 የስልክ 500-ካርቴላ እና Admin CRM መተግበሪያ (`.APK` v3.0.0)**: `RoyalBingoPro_251_500Cartela_v3.0.0.apk`
           files: |
             release-assets/RoyalBingoPro_251_Setup_v3.0.0.exe
-            release-assets/RoyalBingoPro_251_Setup_v2.0.0.exe
             release-assets/RoyalBingoPro_Setup.exe
             release-assets/RoyalBingoPro_251_500Cartela_v3.0.0.apk
             release-assets/RoyalBingoPro_251_500Cartela_v2.0.0.apk
-            release-assets/RoyalBingoPro_500Cartela_v2.0.0.apk
             release-assets/RoyalBingoPro_251_500Cartela_v3.0.0.aab
           draft: false
           prerelease: false
